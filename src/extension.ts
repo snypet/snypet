@@ -1,49 +1,61 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
+import { walk } from './utils';
 
-  const provider = vscode.languages.registerCompletionItemProvider(
-    ['plaintext', 'javascript', 'typescript'],
-    {
-      provideCompletionItems(
-        document: vscode.TextDocument,
-        position: vscode.Position,
-        token: vscode.CancellationToken,
-        context: vscode.CompletionContext
-      ) {
-      const simpleCompletion = new vscode.CompletionItem('Hello World!');
+import { parseComponents } from './component-parser';
 
-			// a completion item that inserts its text as snippet,
-			// the `insertText`-property is a `SnippetString` which will be
-			// honored by the editor.
-			const snippetCompletion = new vscode.CompletionItem('Good part of the day');
-			snippetCompletion.insertText = new vscode.SnippetString('Good ${1|morning,afternoon,evening|}. It is ${1}, right?');
-			snippetCompletion.documentation = new vscode.MarkdownString("Inserts a snippet that lets you select the _appropriate_ part of the day for your greeting.");
+export function activate(context: vscode.ExtensionContext) {
+  // Get files having components
+  // TODO: enhance the logic to get components
+  const packageDir = 'packages';
+  const rootPath = vscode.workspace.rootPath;
+  let componentData;
 
-			// a completion item that can be accepted by a commit character,
-			// the `commitCharacters`-property is set which means that the completion will
-			// be inserted and then the character will be typed.
-			const commitCharacterCompletion = new vscode.CompletionItem('console');
-			commitCharacterCompletion.commitCharacters = ['.'];
-			commitCharacterCompletion.documentation = new vscode.MarkdownString('Press `.` to get `console.`');
+  if (rootPath) {
+    const componentsRoot = path.join(rootPath, packageDir);
+    const componentFiles = walk(componentsRoot);
+    // Write logic to get component name
+    componentData = parseComponents(componentFiles);
 
-			// a completion item that retriggers IntelliSense when being accepted,
-			// the `command`-property is set which the editor will execute after 
-			// completion has been inserted. Also, the `insertText` is set so that 
-			// a space is inserted after `new`
-			const commandCompletion = new vscode.CompletionItem('new');
-			commandCompletion.kind = vscode.CompletionItemKind.Keyword;
-			commandCompletion.insertText = 'new ';
-			commandCompletion.command = { command: 'editor.action.triggerSuggest', title: 'Re-trigger completions...' };
+    // Hack to add the attributes
+    componentData.forEach((component) => {
+      component.attr = '';
+      if (component.propTypeDef) {
+        const keys = Object.keys(component.propTypeDef);
+        if (keys.length > 0) {
+          const attrs = keys.reduce((acc, key, index) => {
+            return `${acc}
+  ${key}='$\{${index + 1}}'`;
+          }, '');
+          component.attr = attrs;
+        }
+      }
+    });
+  }
 
-			// return all completion items as array
-			return [
-				simpleCompletion,
-				snippetCompletion,
-				commitCharacterCompletion,
-				commandCompletion
-			];
-      },
-    }
-  );
+  const provider = vscode.languages.registerCompletionItemProvider(['plaintext', 'javascript', 'typescript'], {
+    provideCompletionItems(
+      document: vscode.TextDocument,
+      position: vscode.Position,
+      token: vscode.CancellationToken,
+      context: vscode.CompletionContext
+    ) {
+      const items = [];
+
+      componentData.forEach((component) => {
+        const snippetCompletion = new vscode.CompletionItem(component.componentName);
+
+        snippetCompletion.insertText = new vscode.SnippetString(
+          `<${component.componentName} ${component.attr}>
+  </${component.componentName}>`
+        );
+
+        items.push(snippetCompletion);
+      });
+
+      return items;
+    },
+  });
 
   context.subscriptions.push(provider);
 }
