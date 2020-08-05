@@ -22,10 +22,7 @@ const getTypeDesc = (rootNode, propTypeVarName, currentFilePath) => {
           if (Node.isStringLiteral(child)) {
             typeFilePath = child.getFullText().trim();
             typeFilePath = typeFilePath.replace(/'|"/g, '');
-            typeFilePath = path.join(
-              currentDirectory.trim(),
-              typeFilePath.trim()
-            );
+            typeFilePath = path.join(currentDirectory.trim(), typeFilePath.trim());
           }
         });
       }
@@ -34,10 +31,10 @@ const getTypeDesc = (rootNode, propTypeVarName, currentFilePath) => {
 
   if (typeFilePath) {
     //TODO: create a forEach to figure the correct path
-    let withTs = `${typeFilePath}.ts`;
-    let withTsx = `${typeFilePath}.tsx`;
-    let withIndexTs = `${typeFilePath}/index.ts`;
-    let withIndexTsx = `${typeFilePath}/index.ts`;
+    const withTs = `${typeFilePath}.ts`;
+    const withTsx = `${typeFilePath}.tsx`;
+    const withIndexTs = `${typeFilePath}/index.ts`;
+    const withIndexTsx = `${typeFilePath}/index.ts`;
     let correctPath;
 
     if (fs.existsSync(withTs)) {
