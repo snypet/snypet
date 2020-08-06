@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
-import * as path from 'path';
-import { walk, getSnypetConfig, getVscodeCurrentPath } from './utils';
+
+import { getSnypetConfig, getVscodeCurrentPath, getComponentFiles } from './utils';
+import { SUPPORTED_FILES_TYPES } from './constants';
 
 import { parseComponents } from './component-parser';
 
@@ -12,9 +13,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   if (rootPath && config) {
     const { componentPath } = config;
-    // TODO: handle only a single path for now.
-    const componentsRoot = path.join(rootPath, componentPath as string);
-    const componentFiles = walk(componentsRoot);
+    const componentFiles = getComponentFiles(rootPath, componentPath);
+
     componentData = parseComponents(componentFiles);
 
     componentData.forEach((component) => {
@@ -33,32 +33,29 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     console.log(componentData);
   }
 
-  const provider = vscode.languages.registerCompletionItemProvider(
-    ['javascript', 'typescript', 'javascriptreact', 'typescriptreact'],
-    {
-      provideCompletionItems(
-        document: vscode.TextDocument,
-        position: vscode.Position,
-        token: vscode.CancellationToken,
-        context: vscode.CompletionContext
-      ) {
-        const items = [];
+  const provider = vscode.languages.registerCompletionItemProvider(SUPPORTED_FILES_TYPES, {
+    provideCompletionItems(
+      document: vscode.TextDocument,
+      position: vscode.Position,
+      token: vscode.CancellationToken,
+      context: vscode.CompletionContext
+    ) {
+      const items = [];
 
-        componentData.forEach((component) => {
-          const snippetCompletion = new vscode.CompletionItem(component.componentName);
+      componentData.forEach((component) => {
+        const snippetCompletion = new vscode.CompletionItem(component.componentName);
 
-          snippetCompletion.insertText = new vscode.SnippetString(
-            `<${component.componentName} ${component.attr}>
+        snippetCompletion.insertText = new vscode.SnippetString(
+          `<${component.componentName} ${component.attr}>
   </${component.componentName}>`
-          );
+        );
 
-          items.push(snippetCompletion);
-        });
+        items.push(snippetCompletion);
+      });
 
-        return items;
-      },
-    }
-  );
+      return items;
+    },
+  });
 
   context.subscriptions.push(provider);
 }
