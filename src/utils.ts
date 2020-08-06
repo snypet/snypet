@@ -1,5 +1,7 @@
 import * as fs from 'fs';
 import * as vscode from 'vscode';
+import * as path from 'path';
+import { isArray, isString, concat } from 'lodash';
 
 import { cosmiconfig } from 'cosmiconfig';
 import { SynpetConfiguration } from './types';
@@ -52,4 +54,23 @@ export const getSnypetConfig = async (): Promise<SynpetConfiguration | null> => 
     console.error(`Some error occurred while creating the config file, Please try again!. ${e}`);
     return null;
   }
+};
+
+/**
+ *  Returns all the components file paths based on the `componentPath` value in `snypet` config
+ */
+export const getComponentFiles = (rootPath: string, componentPath: string | string[]): string[] => {
+  let componentFiles: string[] = [];
+  if (isString(componentPath)) {
+    const componentsRoot = path.join(rootPath, componentPath);
+    componentFiles = concat(componentFiles, walk(componentsRoot));
+  }
+
+  if (isArray(componentPath)) {
+    componentPath.forEach((filePath) => {
+      const componentsRoot = path.join(rootPath, filePath);
+      componentFiles = concat(componentFiles, walk(componentsRoot));
+    });
+  }
+  return componentFiles;
 };
