@@ -9,3 +9,4 @@ export const NO_CONFIG_ACTIONS = {
   ADD: 'Add',
   IGNORE: 'Ignore',
 };
+export const FILETYPES = ['.tsx', '.ts', '.js'];
