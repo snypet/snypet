@@ -1,31 +1,31 @@
 import * as vscode from 'vscode';
-import * as path from 'path';
-import { walk } from './utils';
+import { trimEnd } from 'lodash';
+
+import { getSnypetConfig, getVscodeCurrentPath, getComponentFiles } from './utils';
+import { SUPPORTED_FILE_TYPES } from './constants';
 
 import { parseComponents } from './component-parser';
 
-export function activate(context: vscode.ExtensionContext) {
-  // Get files having components
-  // TODO: enhance the logic to get components
-  const packageDir = 'packages';
-  const rootPath = vscode.workspace.rootPath;
+export async function activate(context: vscode.ExtensionContext): Promise<void> {
   let componentData;
 
-  if (rootPath) {
-    const componentsRoot = path.join(rootPath, packageDir);
-    const componentFiles = walk(componentsRoot);t
-    // Write logic to get component name
+  const rootPath = getVscodeCurrentPath();
+  const config = await getSnypetConfig();
+
+  if (rootPath && config) {
+    const { componentPath } = config;
+    const componentFiles = getComponentFiles(rootPath, componentPath);
+
     componentData = parseComponents(componentFiles);
 
-    // Hack to add the attributes
     componentData.forEach((component) => {
       component.attr = '';
-      if (component.propTypeDef) {
-        const keys = Object.keys(component.propTypeDef);
+      const componentPropTypeDefs = component.propTypeDef;
+      if (componentPropTypeDefs) {
+        const keys = Object.keys(componentPropTypeDefs);
         if (keys.length > 0) {
           const attrs = keys.reduce((acc, key, index) => {
-            return `${acc}
-  ${key}='$\{${index + 1}:${component.propTypeDef[key].slice(0,-1)}}'`;
+            return `${acc}\n\t${key}='$\{${index + 1}:${trimEnd(componentPropTypeDefs[key], ';')}}'`;
           }, '');
           component.attr = attrs;
         }
@@ -33,7 +33,7 @@ export function activate(context: vscode.ExtensionContext) {
     });
   }
 
-  const provider = vscode.languages.registerCompletionItemProvider(['plaintext', 'javascript', 'typescript'], {
+  const provider = vscode.languages.registerCompletionItemProvider(SUPPORTED_FILE_TYPES, {
     provideCompletionItems(
       document: vscode.TextDocument,
       position: vscode.Position,
@@ -46,8 +46,7 @@ export function activate(context: vscode.ExtensionContext) {
         const snippetCompletion = new vscode.CompletionItem(component.componentName);
 
         snippetCompletion.insertText = new vscode.SnippetString(
-          `<${component.componentName} ${component.attr}>
-  </${component.componentName}>`
+          `<${component.componentName}${component.attr}>\n</${component.componentName}>`
         );
 
         items.push(snippetCompletion);
