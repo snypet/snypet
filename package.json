@@ -37,6 +37,7 @@
     "vscode-test": "^1.3.0"
   },
   "dependencies": {
+    "cosmiconfig": "^7.0.0",
     "ts-morph": "^7.1.3"
   }
 }

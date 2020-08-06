@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { walk } from './utils';
+import { walk, getSnypetConfig } from './utils';
 
 import { parseComponents } from './component-parser';
 
@@ -10,6 +10,8 @@ export function activate(context: vscode.ExtensionContext) {
   const packageDir = 'packages';
   const rootPath = vscode.workspace.rootPath;
   let componentData;
+  const config = getSnypetConfig();
+  console.log('Log: config', config);
 
   if (rootPath) {
     const componentsRoot = path.join(rootPath, packageDir);
@@ -31,6 +33,7 @@ export function activate(context: vscode.ExtensionContext) {
         }
       }
     });
+    console.log(componentData);
   }
 
   const provider = vscode.languages.registerCompletionItemProvider(
