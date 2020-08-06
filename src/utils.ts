@@ -39,10 +39,11 @@ export const getVscodeCurrentPath = (): string | undefined => {
 /**
  * Searches for snypet config and returns a config if found or returns null
  */
-export const getSnypetConfig = async (): Promise<SynpetConfiguration | null> => {
-  const explorer = cosmiconfig(COSMICONFIG_MODULE_NAME);
+export const getSnypetConfig = async (path: string): Promise<SynpetConfiguration | null> => {
   try {
-    const path = getVscodeCurrentPath();
+    const explorer = cosmiconfig(COSMICONFIG_MODULE_NAME, {
+      stopDir: path, // only search in the current root directory
+    });
     if (path) {
       const result = await explorer.search(path);
       if (result && !result.isEmpty) {
@@ -63,7 +64,7 @@ export const getComponentFiles = async (): Promise<string[]> => {
   let componentFiles: string[] = [];
 
   const rootPath = getVscodeCurrentPath();
-  const config = await getSnypetConfig();
+  const config = await getSnypetConfig(rootPath || '');
 
   if (rootPath && config) {
     const { componentPath } = config;

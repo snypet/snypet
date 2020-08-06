@@ -14,6 +14,20 @@
     "*"
   ],
   "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "snypet.createConfig",
+        "title": "Create Snypet Configuration",
+        "category": "Snypet"
+      },
+      {
+        "command": "snypet.reloadSnippets",
+        "title": "Reload snippets",
+        "category": "Snypet"
+      }
+    ]
+  },
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",

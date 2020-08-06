@@ -1,7 +1,9 @@
 import * as vscode from 'vscode';
+import { workspace as Workspace, window as Window, commands as Commands } from 'vscode';
 
 import { getComponentFiles } from './utils';
 import { SUPPORTED_FILE_TYPES } from './constants';
+import { createDefaultConfiguration } from './commands';
 
 import { parseComponents } from './component-parser';
 
@@ -11,7 +13,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.window.showWarningMessage(
       'No components found. Please verify the `componentPath` value in `snypet` config file'
     );
-    return;
   }
 
   let componentData = parseComponents(componentFiles);
@@ -56,4 +57,5 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   });
 
   context.subscriptions.push(provider);
+  context.subscriptions.push(Commands.registerCommand('snypet.createConfig', createDefaultConfiguration));
 }
