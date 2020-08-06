@@ -1,5 +1,5 @@
 import * as fs from 'fs';
-import * as vscode from 'vscode';
+import { workspace as Workspace, window as Window, WorkspaceFolder as IWorkSpaceFolder } from 'vscode';
 import * as path from 'path';
 import { isArray, isString, concat } from 'lodash';
 import { cosmiconfigSync } from 'cosmiconfig';
@@ -29,13 +29,22 @@ export const walk = (dir: string): string[] => {
 };
 
 export const getVscodeCurrentPath = (): string => {
-  const workspaceFolders = vscode.workspace.workspaceFolders;
+  const workspaceFolders = Workspace.workspaceFolders;
   if (workspaceFolders && workspaceFolders[0]) {
     const currentFolder = workspaceFolders[0];
     const { path } = currentFolder.uri;
     return path;
   }
   return '';
+};
+
+// TODO: use this and deprecitate `getVscodeCurrentPath`
+export const getVscodeCurrentFolder = (): IWorkSpaceFolder | null => {
+  const workspaceFolders = Workspace.workspaceFolders;
+  if (workspaceFolders && workspaceFolders[0]) {
+    return workspaceFolders[0];
+  }
+  return null;
 };
 
 /**
@@ -72,7 +81,7 @@ export const getSnypetConfigSync = (path: string): SynpetConfiguration | null =>
     }
     return null;
   } catch (error) {
-    console.error(`Some error occurred while creating the config file, Please try again!. ${e}`);
+    console.error(`Some error occurred while creating the config file, Please try again!. ${error}`);
     return null;
   }
 };
@@ -121,7 +130,7 @@ export const getRelativePath = (from: string, to: string): string | undefined =>
 };
 
 export const getCurrentFocusFile = (): string => {
-  return vscode.window.activeTextEditor.document.fileName;
+  return Window.activeTextEditor.document.fileName;
 };
 
 const gettypeDefFromPropLiteral = (node) => {
