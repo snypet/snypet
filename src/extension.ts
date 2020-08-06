@@ -2,13 +2,7 @@ import * as vscode from 'vscode';
 import { window as Window, commands as Commands } from 'vscode';
 import { trimEnd } from 'lodash';
 
-import {
-  getComponentFiles,
-  isConfigAvailable,
-  getVscodeCurrentPath,
-  getVscodeCurrentFolder,
-  getSnypetConfigSync,
-} from './utils';
+import { getComponentFiles, getVscodeCurrentPath, getVscodeCurrentFolder, getSnypetConfigSync } from './utils';
 import { SUPPORTED_FILE_TYPES, NO_CONFIG_ACTIONS } from './constants';
 import { createDefaultConfiguration } from './commands';
 
@@ -21,16 +15,23 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   context.subscriptions.push(Commands.registerCommand('snypet.createConfig', createDefaultConfiguration));
 
   const componentPath = getVscodeCurrentPath();
-  if (isConfigAvailable(componentPath)) {
+  const config = getSnypetConfigSync(componentPath);
+
+  if (config && config.componentPath) {
     const componentFiles = await getComponentFiles();
     if (!componentFiles.length) {
       Window.showWarningMessage('No components found. Please verify the `componentPath` value in `snypet` config file');
     }
     let componentData = parseComponents(componentFiles);
 
-    const atlasKitRoot = path.join(getVscodeCurrentPath(), 'node_modules/@atlaskit');
-    const akData = parseAtlaskit(atlasKitRoot);
-    componentData = componentData.concat(akData);
+    const { componentPath } = config;
+    const ATLASKIT_PATH = 'node_modules/@atlaskit';
+    // TODO: remove hardcoded atlaskit before publishing
+    if (componentPath.includes(ATLASKIT_PATH)) {
+      const atlasKitRoot = path.join(getVscodeCurrentPath(), ATLASKIT_PATH);
+      const akData = parseAtlaskit(atlasKitRoot);
+      componentData = componentData.concat(akData);
+    }
 
     componentData.forEach((component) => {
       component.attr = '';
@@ -70,12 +71,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         context: vscode.CompletionContext
       ) {
         const items: vscode.CompletionItem[] = [];
-        const rootPath = getVscodeCurrentPath();
-        const config = getSnypetConfigSync(rootPath);
 
         componentData.forEach((component) => {
           let snippetName = component.componentName;
-          if (config && config.prefix) {
+          if (config.prefix) {
             snippetName = `${config.prefix}${snippetName}`;
           }
           const snippetCompletion = new vscode.CompletionItem(snippetName);
