@@ -2,7 +2,7 @@
  * Synpet configuration
  */
 export interface SynpetConfiguration {
-  path: string | string[];
+  componentPath: string | string[];
   prefix?: string;
   snippetFileName?: string;
 }
