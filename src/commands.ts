@@ -1,8 +1,11 @@
+import { SynpetConfiguration } from './types';
 import { cosmiconfigSync } from 'cosmiconfig';
 import * as fs from 'fs';
-import { workspace as Workspace, window as Window, WorkspaceFolder, QuickPickItem } from 'vscode';
+import { workspace as Workspace, window as Window, WorkspaceFolder, QuickPickItem, commands as Commands } from 'vscode';
 
 import { COSMICONFIG_MODULE_NAME } from './constants';
+import { words, isArray } from 'lodash';
+import { createConstructor } from 'typescript';
 
 interface WorkspaceFolderItem extends QuickPickItem {
   folder: WorkspaceFolder;
@@ -55,26 +58,36 @@ export const createDefaultConfiguration = (): void => {
       if (!folder) {
         return;
       }
-      let config = {
+      let config: SynpetConfiguration = {
         componentPath: '',
         prefix: '',
       };
 
-      const componentPath = await Window.showInputBox({
-        prompt: 'Select your React component folder',
+      const answer = await Window.showInputBox({
+        prompt: 'Enter your React component folder, (use comma seperated value for multiple folders)',
       });
 
-      if (componentPath) {
+      if (answer) {
+        const componentPath = words(answer);
         config = {
           ...config,
           componentPath,
         };
       }
+
       const folderRootPath = folder.uri.fsPath;
       const fileData = JSON.stringify(config, null, 2);
       fs.writeFile(`${folderRootPath}/.snypetrc.json`, fileData, (err) => {
         if (!err) {
-          Window.showInformationMessage(`Successfully created a snypet configuration for ${folder.name}`);
+          const message = `
+Successfully created a snypet configuration for "${folder.name}"
+Reload window in order to load the snippets.`;
+          const action = 'Reload';
+          Window.showInformationMessage(message, action).then((input) => {
+            if (input === action) {
+              Commands.executeCommand('workbench.action.reloadWindow');
+            }
+          });
         }
       });
     }
