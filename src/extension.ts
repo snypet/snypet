@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { trimEnd } from 'lodash';
 
 import { getComponentFiles } from './utils';
 import { SUPPORTED_FILE_TYPES } from './constants';
@@ -18,18 +19,17 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   componentData.forEach((component) => {
     component.attr = '';
-    if (component.propTypeDef) {
-      const keys = Object.keys(component.propTypeDef);
+    const componentPropTypeDefs = component.propTypeDef;
+    if (componentPropTypeDefs) {
+      const keys = Object.keys(componentPropTypeDefs);
       if (keys.length > 0) {
         const attrs = keys.reduce((acc, key, index) => {
-          return `${acc}
-  ${key}='$\{${index + 1}}'`;
+          return `${acc}\n\t${key}='$\{${index + 1}:${trimEnd(componentPropTypeDefs[key], ';')}}'`;
         }, '');
         component.attr = attrs;
       }
     }
   });
-  console.log(componentData);
 
   const provider = vscode.languages.registerCompletionItemProvider(SUPPORTED_FILE_TYPES, {
     provideCompletionItems(
@@ -44,8 +44,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         const snippetCompletion = new vscode.CompletionItem(component.componentName);
 
         snippetCompletion.insertText = new vscode.SnippetString(
-          `<${component.componentName} ${component.attr}>
-  </${component.componentName}>`
+          `<${component.componentName}${component.attr}>\n</${component.componentName}>`
         );
 
         items.push(snippetCompletion);
