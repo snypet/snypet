@@ -5,7 +5,7 @@ import { isArray, isString, concat } from 'lodash';
 
 import { cosmiconfig } from 'cosmiconfig';
 import { SynpetConfiguration } from './types';
-import { COSMICONFIG_MODULE_NAME } from './constants';
+import { COSMICONFIG_MODULE_NAME, FILETYPES } from './constants';
 
 export const walk = (dir: string): string[] => {
   let results: string[] = [];
@@ -80,4 +80,13 @@ export const getComponentFiles = async (): Promise<string[]> => {
     }
   }
   return componentFiles;
+};
+
+export const getRelativePath = (from: string, to: string): string => {
+  const rootPath: string = getVscodeCurrentPath();
+  let relativePath = path.relative(from.replace(rootPath, ''), to.replace(rootPath, ''));
+  FILETYPES.map((types) => {
+    relativePath = relativePath.replace(types, '');
+  });
+  return relativePath.replace('../', './');
 };

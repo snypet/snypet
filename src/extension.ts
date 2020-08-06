@@ -1,5 +1,4 @@
 import * as vscode from 'vscode';
-
 import { getComponentFiles } from './utils';
 import { SUPPORTED_FILE_TYPES } from './constants';
 
@@ -39,15 +38,15 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       context: vscode.CompletionContext
     ) {
       const items = [];
-
+      const currentlyOpenTabfilePath = vscode.window.activeTextEditor.document.fileName;
       componentData.forEach((component) => {
         const snippetCompletion = new vscode.CompletionItem(component.componentName);
-
+        //This is to get the relative file Path
+        // const relativePath: string = getRelativePath(currentlyOpenTabfilePath, component.filePath);
         snippetCompletion.insertText = new vscode.SnippetString(
           `<${component.componentName} ${component.attr}>
   </${component.componentName}>`
         );
-
         items.push(snippetCompletion);
       });
 
