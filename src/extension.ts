@@ -1,23 +1,22 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { walk } from './utils';
+import { walk, getSnypetConfig, getVscodeCurrentPath } from './utils';
 
 import { parseComponents } from './component-parser';
 
-export function activate(context: vscode.ExtensionContext) {
-  // Get files having components
-  // TODO: enhance the logic to get components
-  const packageDir = 'packages';
-  const rootPath = vscode.workspace.rootPath;
+export async function activate(context: vscode.ExtensionContext): Promise<void> {
   let componentData;
 
-  if (rootPath) {
-    const componentsRoot = path.join(rootPath, packageDir);
+  const rootPath = getVscodeCurrentPath();
+  const config = await getSnypetConfig();
+
+  if (rootPath && config) {
+    const { componentPath } = config;
+    // TODO: handle only a single path for now.
+    const componentsRoot = path.join(rootPath, componentPath as string);
     const componentFiles = walk(componentsRoot);
-    // Write logic to get component name
     componentData = parseComponents(componentFiles);
 
-    // Hack to add the attributes
     componentData.forEach((component) => {
       component.attr = '';
       if (component.propTypeDef) {
@@ -31,6 +30,7 @@ export function activate(context: vscode.ExtensionContext) {
         }
       }
     });
+    console.log(componentData);
   }
 
   const provider = vscode.languages.registerCompletionItemProvider(
