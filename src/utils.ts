@@ -59,18 +59,25 @@ export const getSnypetConfig = async (): Promise<SynpetConfiguration | null> => 
 /**
  *  Returns all the components file paths based on the `componentPath` value in `snypet` config
  */
-export const getComponentFiles = (rootPath: string, componentPath: string | string[]): string[] => {
+export const getComponentFiles = async (): Promise<string[]> => {
   let componentFiles: string[] = [];
-  if (isString(componentPath)) {
-    const componentsRoot = path.join(rootPath, componentPath);
-    componentFiles = concat(componentFiles, walk(componentsRoot));
-  }
 
-  if (isArray(componentPath)) {
-    componentPath.forEach((filePath) => {
-      const componentsRoot = path.join(rootPath, filePath);
+  const rootPath = getVscodeCurrentPath();
+  const config = await getSnypetConfig();
+
+  if (rootPath && config) {
+    const { componentPath } = config;
+    if (isString(componentPath)) {
+      const componentsRoot = path.join(rootPath, componentPath);
       componentFiles = concat(componentFiles, walk(componentsRoot));
-    });
+    }
+
+    if (isArray(componentPath)) {
+      componentPath.forEach((filePath) => {
+        const componentsRoot = path.join(rootPath, filePath);
+        componentFiles = concat(componentFiles, walk(componentsRoot));
+      });
+    }
   }
   return componentFiles;
 };
