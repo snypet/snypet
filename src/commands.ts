@@ -1,11 +1,8 @@
-import { SynpetConfiguration } from './types';
-import { cosmiconfigSync } from 'cosmiconfig';
 import * as fs from 'fs';
+import { map, trim } from 'lodash';
 import { workspace as Workspace, window as Window, WorkspaceFolder, QuickPickItem, commands as Commands } from 'vscode';
-
-import { COSMICONFIG_MODULE_NAME } from './constants';
-import { words, isArray } from 'lodash';
-import { createConstructor } from 'typescript';
+import { isConfigAvailable } from './utils';
+import { SynpetConfiguration } from './types';
 
 interface WorkspaceFolderItem extends QuickPickItem {
   folder: WorkspaceFolder;
@@ -37,13 +34,7 @@ export const createDefaultConfiguration = (): void => {
     Window.showErrorMessage('A Synpet configuration can only be generated if VS Code is opened on a workspace folder.');
     return;
   }
-  const noConfigFolders = folders.filter((folder) => {
-    const explorer = cosmiconfigSync(COSMICONFIG_MODULE_NAME, {
-      stopDir: folder.uri.fsPath,
-    });
-    const config = explorer.search(folder.uri.fsPath);
-    return config ? false : true;
-  });
+  const noConfigFolders = folders.filter((folder) => !isConfigAvailable(folder.uri.fsPath));
 
   if (noConfigFolders.length === 0) {
     if (folders.length === 1) {
@@ -68,7 +59,7 @@ export const createDefaultConfiguration = (): void => {
       });
 
       if (answer) {
-        const componentPath = words(answer);
+        const componentPath = map(answer.split(','), trim);
         config = {
           ...config,
           componentPath,

@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { isArray, isString, concat } from 'lodash';
+import { cosmiconfigSync } from 'cosmiconfig';
 
 import { cosmiconfig } from 'cosmiconfig';
 import { SynpetConfiguration } from './types';
@@ -26,14 +27,14 @@ export const walk = (dir: string): string[] => {
   return results;
 };
 
-export const getVscodeCurrentPath = (): string | undefined => {
+export const getVscodeCurrentPath = (): string => {
   const workspaceFolders = vscode.workspace.workspaceFolders;
   if (workspaceFolders && workspaceFolders[0]) {
     const currentFolder = workspaceFolders[0];
     const { path } = currentFolder.uri;
     return path;
   }
-  return;
+  return '';
 };
 
 /**
@@ -50,8 +51,26 @@ export const getSnypetConfig = async (path: string): Promise<SynpetConfiguration
         return result.config;
       }
     }
+
     return null;
   } catch (e) {
+    console.error(`Some error occurred while creating the config file, Please try again!. ${e}`);
+    return null;
+  }
+};
+
+// TODO: remove duplicate code
+export const getSnypetConfigSync = (path: string): SynpetConfiguration | null => {
+  try {
+    const explorer = cosmiconfigSync(COSMICONFIG_MODULE_NAME, {
+      stopDir: path,
+    });
+    const result = explorer.search(path);
+    if (result && !result.isEmpty) {
+      return result.config;
+    }
+    return null;
+  } catch (error) {
     console.error(`Some error occurred while creating the config file, Please try again!. ${e}`);
     return null;
   }
@@ -81,4 +100,8 @@ export const getComponentFiles = async (): Promise<string[]> => {
     }
   }
   return componentFiles;
+};
+export const isConfigAvailable = (path: string): boolean => {
+  const config = getSnypetConfigSync(path);
+  return !!config;
 };
