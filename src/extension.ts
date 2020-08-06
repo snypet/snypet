@@ -73,20 +73,18 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         const rootPath = getVscodeCurrentPath();
         const config = getSnypetConfigSync(rootPath);
 
-        if (rootPath && config) {
-          const prefix = config.prefix;
+        componentData.forEach((component) => {
+          let snippetName = component.componentName;
+          if (config && config.prefix) {
+            snippetName = `${config.prefix}${snippetName}`;
+          }
+          const snippetCompletion = new vscode.CompletionItem(snippetName);
+          snippetCompletion.insertText = new vscode.SnippetString(
+            `<${component.componentName}${component.attr}>\n</${component.componentName}>`
+          );
 
-          componentData.forEach((component) => {
-            const snippetCompletion = new vscode.CompletionItem(`${prefix}${component.componentName}`);
-            //This is to get the relative file Path
-            // const relativePath: string = getRelativePath(currentlyOpenTabfilePath, component.filePath);
-            snippetCompletion.insertText = new vscode.SnippetString(
-              `<${component.componentName}${component.attr}>\n</${component.componentName}>`
-            );
-
-            items.push(snippetCompletion);
-          });
-        }
+          items.push(snippetCompletion);
+        });
 
         return items;
       },
