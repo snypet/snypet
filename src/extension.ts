@@ -1,37 +1,35 @@
 import * as vscode from 'vscode';
 
-import { getSnypetConfig, getVscodeCurrentPath, getComponentFiles } from './utils';
+import { getComponentFiles } from './utils';
 import { SUPPORTED_FILE_TYPES } from './constants';
 
 import { parseComponents } from './component-parser';
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
-  let componentData;
-
-  const rootPath = getVscodeCurrentPath();
-  const config = await getSnypetConfig();
-
-  if (rootPath && config) {
-    const { componentPath } = config;
-    const componentFiles = getComponentFiles(rootPath, componentPath);
-
-    componentData = parseComponents(componentFiles);
-
-    componentData.forEach((component) => {
-      component.attr = '';
-      if (component.propTypeDef) {
-        const keys = Object.keys(component.propTypeDef);
-        if (keys.length > 0) {
-          const attrs = keys.reduce((acc, key, index) => {
-            return `${acc}
-  ${key}='$\{${index + 1}}'`;
-          }, '');
-          component.attr = attrs;
-        }
-      }
-    });
-    console.log(componentData);
+  const componentFiles = await getComponentFiles();
+  if (!componentFiles.length) {
+    vscode.window.showWarningMessage(
+      'No components found. Please verify the `componentPath` value in `snypet` config file'
+    );
+    return;
   }
+
+  let componentData = parseComponents(componentFiles);
+
+  componentData.forEach((component) => {
+    component.attr = '';
+    if (component.propTypeDef) {
+      const keys = Object.keys(component.propTypeDef);
+      if (keys.length > 0) {
+        const attrs = keys.reduce((acc, key, index) => {
+          return `${acc}
+  ${key}='$\{${index + 1}}'`;
+        }, '');
+        component.attr = attrs;
+      }
+    }
+  });
+  console.log(componentData);
 
   const provider = vscode.languages.registerCompletionItemProvider(SUPPORTED_FILE_TYPES, {
     provideCompletionItems(
