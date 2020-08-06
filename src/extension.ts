@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { window as Window, commands as Commands } from 'vscode';
 import { trimEnd } from 'lodash';
 
-import { getComponentFiles, isConfigAvailable, getVscodeCurrentPath, getVscodeCurrentFolder } from './utils';
+import { getComponentFiles, getVscodeCurrentPath, getVscodeCurrentFolder, getSnypetConfigSync } from './utils';
 import { SUPPORTED_FILE_TYPES, NO_CONFIG_ACTIONS } from './constants';
 import { createDefaultConfiguration } from './commands';
 
@@ -15,16 +15,23 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   context.subscriptions.push(Commands.registerCommand('snypet.createConfig', createDefaultConfiguration));
 
   const componentPath = getVscodeCurrentPath();
-  if (isConfigAvailable(componentPath)) {
+  const config = getSnypetConfigSync(componentPath);
+
+  if (config && config.componentPath) {
     const componentFiles = await getComponentFiles();
     if (!componentFiles.length) {
       Window.showWarningMessage('No components found. Please verify the `componentPath` value in `snypet` config file');
     }
     let componentData = parseComponents(componentFiles);
 
-    const atlasKitRoot: string = path.join(getVscodeCurrentPath(), 'node_modules/@atlaskit');
-    const akData = parseAtlaskit(atlasKitRoot);
-    componentData = componentData.concat(akData);
+    const { componentPath } = config;
+    const ATLASKIT_PATH = 'node_modules/@atlaskit';
+    // TODO: remove hardcoded atlaskit before publishing
+    if (componentPath.includes(ATLASKIT_PATH)) {
+      const atlasKitRoot: string = path.join(getVscodeCurrentPath(), 'node_modules/@atlaskit');
+      const akData = parseAtlaskit(atlasKitRoot);
+      componentData = componentData.concat(akData);
+    }
 
     componentData.forEach((component: any) => {
       component.attr = '';
@@ -66,9 +73,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         const items: vscode.CompletionItem[] = [];
 
         componentData.forEach((component: any) => {
-          const snippetCompletion = new vscode.CompletionItem(component.componentName);
-          //This is to get the relative file Path
-          // const relativePath: string = getRelativePath(currentlyOpenTabfilePath, component.filePath);
+          let snippetName = component.componentName;
+          if (config.prefix) {
+            snippetName = `${config.prefix}${snippetName}`;
+          }
+          const snippetCompletion = new vscode.CompletionItem(snippetName);
           snippetCompletion.insertText = new vscode.SnippetString(
             `<${component.componentName}${component.attr}>\n</${component.componentName}>`
           );
