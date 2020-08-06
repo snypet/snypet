@@ -37,10 +37,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       token: vscode.CancellationToken,
       context: vscode.CompletionContext
     ) {
-      const items = [];
-      const currentlyOpenTabfilePath = vscode.window.activeTextEditor.document.fileName;
+      const items: vscode.CompletionItem[] = [];
+      // const currentlyOpenfilePath: string = getCurrentFocusFile();
       componentData.forEach((component) => {
-        const snippetCompletion = new vscode.CompletionItem(component.componentName);
+        const snippetCompletion: vscode.CompletionItem = new vscode.CompletionItem(component.componentName);
         //This is to get the relative file Path
         // const relativePath: string = getRelativePath(currentlyOpenTabfilePath, component.filePath);
         snippetCompletion.insertText = new vscode.SnippetString(

@@ -82,11 +82,20 @@ export const getComponentFiles = async (): Promise<string[]> => {
   return componentFiles;
 };
 
-export const getRelativePath = (from: string, to: string): string => {
-  const rootPath: string = getVscodeCurrentPath();
-  let relativePath = path.relative(from.replace(rootPath, ''), to.replace(rootPath, ''));
-  FILETYPES.map((types) => {
-    relativePath = relativePath.replace(types, '');
-  });
-  return relativePath.replace('../', './');
+export const getRelativePath = (from: string, to: string): string | undefined => {
+  try {
+    const rootPath: string = getVscodeCurrentPath();
+    let relativePath = path.relative(from.replace(rootPath, ''), to.replace(rootPath, ''));
+    FILETYPES.map((types) => {
+      relativePath = relativePath.replace(types, '');
+    });
+    return relativePath.replace('../', './');
+  } catch (err) {
+    console.error(`Some error occurred during getting relative path ${e}`);
+    return;
+  }
+};
+
+export const getCurrentFocusFile = (): string => {
+  return vscode.window.activeTextEditor.document.fileName;
 };
