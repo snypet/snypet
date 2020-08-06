@@ -13,6 +13,8 @@
   "activationEvents": [
     "*"
   ],
+  "icon": "snypet.png",
+  "homepage": "https://github.com/snypet/snypet",
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
