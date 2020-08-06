@@ -2,7 +2,13 @@ import * as vscode from 'vscode';
 import { window as Window, commands as Commands } from 'vscode';
 import { trimEnd } from 'lodash';
 
-import { getComponentFiles, isConfigAvailable, getVscodeCurrentPath, getVscodeCurrentFolder } from './utils';
+import {
+  getComponentFiles,
+  isConfigAvailable,
+  getVscodeCurrentPath,
+  getVscodeCurrentFolder,
+  getSnypetConfigSync,
+} from './utils';
 import { SUPPORTED_FILE_TYPES, NO_CONFIG_ACTIONS } from './constants';
 import { createDefaultConfiguration } from './commands';
 
@@ -64,17 +70,23 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         context: vscode.CompletionContext
       ) {
         const items: vscode.CompletionItem[] = [];
+        const rootPath = getVscodeCurrentPath();
+        const config = getSnypetConfigSync(rootPath);
 
-        componentData.forEach((component) => {
-          const snippetCompletion = new vscode.CompletionItem(component.componentName);
-          //This is to get the relative file Path
-          // const relativePath: string = getRelativePath(currentlyOpenTabfilePath, component.filePath);
-          snippetCompletion.insertText = new vscode.SnippetString(
-            `<${component.componentName}${component.attr}>\n</${component.componentName}>`
-          );
+        if (rootPath && config) {
+          const prefix = config.prefix;
 
-          items.push(snippetCompletion);
-        });
+          componentData.forEach((component) => {
+            const snippetCompletion = new vscode.CompletionItem(`${prefix}${component.componentName}`);
+            //This is to get the relative file Path
+            // const relativePath: string = getRelativePath(currentlyOpenTabfilePath, component.filePath);
+            snippetCompletion.insertText = new vscode.SnippetString(
+              `<${component.componentName}${component.attr}>\n</${component.componentName}>`
+            );
+
+            items.push(snippetCompletion);
+          });
+        }
 
         return items;
       },
