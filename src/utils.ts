@@ -1,6 +1,7 @@
 import * as fs from 'fs';
+import * as vscode from 'vscode';
+
 import { cosmiconfig } from 'cosmiconfig';
-import { COSMICONFIG_SEARCH_PLACES, COSMICONFIG_MODULE_NAME } from './constants';
 import { SynpetConfiguration } from './types';
 
 export const walk = (dir: string): string[] => {
@@ -28,9 +29,14 @@ export const walk = (dir: string): string[] => {
 export const getSnypetConfig = async (): Promise<SynpetConfiguration | null> => {
   const explorer = cosmiconfig(COSMICONFIG_MODULE_NAME);
   try {
-    const result = await explorer.search();
-    if (result && !result.isEmpty) {
-      return result.config;
+    const workspaceFolders = vscode.workspace.workspaceFolders;
+    if (workspaceFolders && workspaceFolders[0]) {
+      const currentFolder = workspaceFolders[0];
+      const { path } = currentFolder.uri;
+      const result = await explorer.search(path);
+      if (result && !result.isEmpty) {
+        return result.config;
+      }
     }
     return null;
   } catch (e) {

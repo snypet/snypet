@@ -4,14 +4,14 @@ import { walk, getSnypetConfig } from './utils';
 
 import { parseComponents } from './component-parser';
 
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext): Promise<void> {
   // Get files having components
   // TODO: enhance the logic to get components
   const packageDir = 'packages';
   const rootPath = vscode.workspace.rootPath;
   let componentData;
-  const config = getSnypetConfig();
-  console.log('Log: config', config);
+  const config = await getSnypetConfig();
+  console.log('Log: config', JSON.stringify(config));
 
   if (rootPath) {
     const componentsRoot = path.join(rootPath, packageDir);
