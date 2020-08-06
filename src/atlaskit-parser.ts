@@ -1,4 +1,5 @@
-import { Project, Node, SyntaxKind } from 'ts-morph';
+/* eslint-disable @typescript-eslint/no-var-requires */
+import { Project, Node, SyntaxKind, SourceFile } from 'ts-morph';
 import * as path from 'path';
 import * as fs from 'fs';
 
@@ -8,7 +9,7 @@ const project = new Project({
   skipFileDependencyResolution: true,
 });
 
-const getPropTypeName = (str) => {
+const getPropTypeName = (str: string): string => {
   try {
     return str.split('<')[1].split('>')[0].split(',')[0];
   } catch (error) {
@@ -16,38 +17,33 @@ const getPropTypeName = (str) => {
   }
 };
 
-const getComponentAliasForDefault = (rootNode) => {
-  let aliasName;
-  rootNode.forEachChild((leaf) => {
-    const fullText = leaf.getFullText();
+const getComponentAliasForDefault = (rootNode: SourceFile): string => {
+  let aliasName = '';
+  rootNode.forEachChild(
+    (leaf: { getFullText: () => any; forEachChild: (arg0: { (c: any): void; (c: any): void }) => void }) => {
+      const fullText = leaf.getFullText();
 
-    // If exported deafult, get identifier
-    if (fullText.indexOf('export default') > -1) {
-      leaf.forEachChild((c) => {
-        if (Node.isIdentifier(c)) {
-          aliasName = c.getFullText().trim();
-        }
-      });
-    } else if (fullText.indexOf('export default ') > -1 && fullText.indexOf('extends React') > -1) {
-      leaf.forEachChild((c) => {
-        if (Node.isIdentifier(c) && !aliasName) {
-          aliasName = c.getFullText().trim();
-        }
-      });
+      // If exported deafult, get identifier
+      if (fullText.indexOf('export default') > -1) {
+        leaf.forEachChild((c: Node<import('typescript').Node>) => {
+          if (Node.isIdentifier(c)) {
+            aliasName = c.getFullText().trim();
+          }
+        });
+      } else if (fullText.indexOf('export default ') > -1 && fullText.indexOf('extends React') > -1) {
+        leaf.forEachChild((c: Node<import('typescript').Node>) => {
+          if (Node.isIdentifier(c) && !aliasName) {
+            aliasName = c.getFullText().trim();
+          }
+        });
+      }
     }
-  });
-
+  );
   return aliasName;
 };
 
-const getPropDef = (typeName, file) => {
-  const p = new Project({
-    skipFileDependencyResolution: true,
-  });
-  const rootNode = p.addSourceFileAtPath(filePath);
-};
-
-const getComponentDetails = (calledFromFile, relativePath, componentName) => {
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+const getComponentDetails = (calledFromFile: string, relativePath: string, componentName: string) => {
   const p = new Project({
     skipFileDependencyResolution: true,
   });
@@ -56,7 +52,7 @@ const getComponentDetails = (calledFromFile, relativePath, componentName) => {
   const filePath = `${path.join(dtsDirectory, relativePath)}.d.ts`;
   const rootNode = p.addSourceFileAtPath(filePath);
   let componentType;
-  let alias = componentName;
+  let alias: string = componentName;
 
   if (componentName === 'default') {
     alias = getComponentAliasForDefault(rootNode);
@@ -65,7 +61,8 @@ const getComponentDetails = (calledFromFile, relativePath, componentName) => {
   // Verymuch specific to AtlasKit
   // Need to make this generic
   if (alias === '_default') {
-    alias = relativePath.split('/').pop();
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    alias = relativePath.split('/').pop()!;
     return {
       componentName: alias,
     };
@@ -105,7 +102,7 @@ const getComponentDetails = (calledFromFile, relativePath, componentName) => {
   // If we figured out component type
   // let get typedef for those
   if (componentType) {
-    const typeDef = getTypeDef(rootNode, componentType);
+    const typeDef = getTypeDef(rootNode);
     return {
       componentName: alias,
       componentType: componentType,
@@ -114,8 +111,11 @@ const getComponentDetails = (calledFromFile, relativePath, componentName) => {
   }
 };
 
-const componentsDirectory = [];
-const getComponents = (dirpath) => {
+const componentsDirectory: (
+  | { componentName: any; componentType?: undefined; propTypeDef?: undefined }
+  | { componentName: any; componentType: never; propTypeDef: undefined }
+)[] = [];
+const getComponents = (dirpath: string): void => {
   if (!fs.existsSync(dirpath)) {
     return;
   }
@@ -123,14 +123,14 @@ const getComponents = (dirpath) => {
 
   rootNode.forEachChild((leaf) => {
     if (Node.isExportDeclaration(leaf)) {
-      const exportData = {
+      const exportData: any = {
         fullText: leaf.getFullText().trim(),
       };
 
       leaf.forEachChild((exportNode) => {
         // Get all exports identifier
         if (Node.isNamedExports(exportNode)) {
-          const componentNames = [];
+          const componentNames: { importedAs: string | undefined; exportedAs: string | undefined }[] = [];
           exportNode.forEachChild((exportSpec) => {
             if (Node.isExportSpecifier(exportSpec)) {
               const componentDetail = {
@@ -146,7 +146,7 @@ const getComponents = (dirpath) => {
         // Get the files from where components are imported
         if (Node.isStringLiteral(exportNode) && exportData['fullText'].indexOf('from') > 0) {
           exportData.path = exportNode.getFullText().trim().replace(/'|"/g, '');
-          exportData['componentNames'].forEach((element) => {
+          exportData['componentNames'].forEach((element: { exportedAs: any }) => {
             const componentDetail = getComponentDetails(dirpath, exportData.path, element.exportedAs);
             if (componentDetail) {
               componentsDirectory.push(componentDetail);
@@ -158,7 +158,7 @@ const getComponents = (dirpath) => {
   });
 };
 
-const getComponentDirectories = (directoryPath) => {
+const getComponentDirectories = (directoryPath: string): void => {
   const list = fs.readdirSync(directoryPath);
   list.forEach(function (listItem) {
     const listItemPath = path.join(directoryPath, listItem);
@@ -166,22 +166,25 @@ const getComponentDirectories = (directoryPath) => {
     const stat = fs.statSync(listItemPath);
     if (stat && stat.isDirectory()) {
       // find if it has package.json
-      const packagePath = path.join(listItemPath, 'package.json');
+      const packagePath: string = path.join(listItemPath, 'package.json');
 
       if (fs.existsSync(packagePath)) {
         try {
+          // eslint-disable-next-line no-undef
           const packageContent = require(packagePath);
           if (packageContent.types) {
             const dts = path.join(listItemPath, packageContent.types);
             getComponents(dts);
           }
-        } catch (error) {}
+        } catch (error) {
+          throw new Error(error);
+        }
       }
     }
   });
 };
 
-export const parseAtlaskit = (directory) => {
+export const parseAtlaskit = (directory: string) => {
   getComponentDirectories(directory);
   return componentsDirectory;
 };

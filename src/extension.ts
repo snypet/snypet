@@ -28,12 +28,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const ATLASKIT_PATH = 'node_modules/@atlaskit';
     // TODO: remove hardcoded atlaskit before publishing
     if (componentPath.includes(ATLASKIT_PATH)) {
-      const atlasKitRoot = path.join(getVscodeCurrentPath(), ATLASKIT_PATH);
+      const atlasKitRoot: string = path.join(getVscodeCurrentPath(), ATLASKIT_PATH);
       const akData = parseAtlaskit(atlasKitRoot);
       componentData = componentData.concat(akData);
     }
 
-    componentData.forEach((component) => {
+    componentData.forEach((component: any) => {
       component.attr = '';
       const componentPropTypeDefs = component.propTypeDef;
       if (Array.isArray(componentPropTypeDefs)) {
@@ -72,7 +72,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       ) {
         const items: vscode.CompletionItem[] = [];
 
-        componentData.forEach((component) => {
+        componentData.forEach((component: any) => {
           let snippetName = component.componentName;
           if (config.prefix) {
             snippetName = `${config.prefix}${snippetName}`;
