@@ -28,7 +28,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const ATLASKIT_PATH = 'node_modules/@atlaskit';
     // TODO: remove hardcoded atlaskit before publishing
     if (componentPath.includes(ATLASKIT_PATH)) {
-      const atlasKitRoot: string = path.join(getVscodeCurrentPath(), 'node_modules/@atlaskit');
+      const atlasKitRoot: string = path.join(getVscodeCurrentPath(), ATLASKIT_PATH);
       const akData = parseAtlaskit(atlasKitRoot);
       componentData = componentData.concat(akData);
     }
