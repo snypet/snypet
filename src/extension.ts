@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { window as Window, commands as Commands } from 'vscode';
 import { trimEnd } from 'lodash';
 
-import { getComponentFiles, isConfigAvailable, getVscodeCurrentPath } from './utils';
+import { getComponentFiles, isConfigAvailable, getVscodeCurrentPath, getVscodeCurrentFolder } from './utils';
 import { SUPPORTED_FILE_TYPES, NO_CONFIG_ACTIONS } from './constants';
 import { createDefaultConfiguration } from './commands';
 
@@ -59,11 +59,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     context.subscriptions.push(provider);
   } else {
-    const answer = await Window.showWarningMessage(
-      'No configuration found for Snypet. Would you like to add a config file?',
-      NO_CONFIG_ACTIONS.ADD,
-      NO_CONFIG_ACTIONS.IGNORE
-    );
+    const currentFolder = getVscodeCurrentFolder();
+    let message = 'No Snypet configuration found. Would you like to add a config file?';
+    if (currentFolder) {
+      message = `No Snypet configuration found for ${currentFolder.name}. Would you like to add a config file?`;
+    }
+    const answer = await Window.showWarningMessage(message, NO_CONFIG_ACTIONS.ADD, NO_CONFIG_ACTIONS.IGNORE);
     if (answer === NO_CONFIG_ACTIONS.ADD) {
       await Commands.executeCommand('snypet.createConfig');
     }

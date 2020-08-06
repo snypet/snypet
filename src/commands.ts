@@ -64,23 +64,24 @@ export const createDefaultConfiguration = (): void => {
           ...config,
           componentPath,
         };
-      }
-
-      const folderRootPath = folder.uri.fsPath;
-      const fileData = JSON.stringify(config, null, 2);
-      fs.writeFile(`${folderRootPath}/.snypetrc.json`, fileData, (err) => {
-        if (!err) {
-          const message = `
+        const folderRootPath = folder.uri.fsPath;
+        const fileData = JSON.stringify(config, null, 2);
+        fs.writeFile(`${folderRootPath}/.snypetrc.json`, fileData, (err) => {
+          if (!err) {
+            const message = `
 Successfully created a snypet configuration for "${folder.name}"
 Reload window in order to load the snippets.`;
-          const action = 'Reload';
-          Window.showInformationMessage(message, action).then((input) => {
-            if (input === action) {
-              Commands.executeCommand('workbench.action.reloadWindow');
-            }
-          });
-        }
-      });
+            const action = 'Reload';
+            Window.showInformationMessage(message, action).then((input) => {
+              if (input === action) {
+                Commands.executeCommand('workbench.action.reloadWindow');
+              }
+            });
+          }
+        });
+      } else {
+        Window.showErrorMessage('Failed to create a config file. Please provide the componentPath.');
+      }
     }
   );
 };
