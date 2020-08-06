@@ -7,6 +7,7 @@ import { cosmiconfigSync } from 'cosmiconfig';
 import { cosmiconfig } from 'cosmiconfig';
 import { SynpetConfiguration } from './types';
 import { COSMICONFIG_MODULE_NAME, FILETYPES } from './constants';
+import { Node } from 'ts-morph';
 
 export const walk = (dir: string): string[] => {
   let results: string[] = [];
@@ -121,4 +122,53 @@ export const getRelativePath = (from: string, to: string): string | undefined =>
 
 export const getCurrentFocusFile = (): string => {
   return vscode.window.activeTextEditor.document.fileName;
+};
+
+const gettypeDefFromPropLiteral = (node) => {
+  const typeDefs = [];
+  node.forEachChild((n) => {
+    if (Node.isPropertySignature(n)) {
+      const typeDef = {};
+      n.forEachChild((nn) => {
+        if (nn.getKindName() === 'Identifier') {
+          const currentText = nn.getFullText().trim();
+          if (currentText.indexOf('/**') > -1) {
+            const [comment, name] = currentText.split('*/');
+            typeDef.comment = comment.replace('/** ', '').trim();
+            typeDef.name = name.trim();
+          } else {
+            typeDef.comment = undefined;
+            typeDef.name = currentText;
+          }
+        } else if (nn.getKindName() === 'QuestionToken') {
+          typeDef.isOptional = true;
+        } else {
+          typeDef.value = nn.getFullText().trim();
+        }
+      });
+
+      typeDefs.push(typeDef);
+    }
+  });
+
+  return typeDefs;
+};
+
+export const getTypeDef = (root) => {
+  let typeDef;
+
+  root.forEachChild((c) => {
+    if (Node.isInterfaceDeclaration(c)) {
+      typeDef = gettypeDefFromPropLiteral(c);
+    }
+
+    if (Node.isTypeAliasDeclaration(c)) {
+      c.forEachChild((cc) => {
+        if (cc.getKindName() === 'TypeLiteral') {
+          typeDef = gettypeDefFromPropLiteral(cc);
+        }
+      });
+    }
+  });
+  return typeDef;
 };

@@ -6,7 +6,10 @@ import { getComponentFiles, isConfigAvailable, getVscodeCurrentPath } from './ut
 import { SUPPORTED_FILE_TYPES, NO_CONFIG_ACTIONS } from './constants';
 import { createDefaultConfiguration } from './commands';
 
+import * as path from 'path';
+
 import { parseComponents } from './component-parser';
+import { parseAtlaskit } from './atlaskit-parser';
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   context.subscriptions.push(Commands.registerCommand('snypet.createConfig', createDefaultConfiguration));
@@ -17,12 +20,32 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     if (!componentFiles.length) {
       Window.showWarningMessage('No components found. Please verify the `componentPath` value in `snypet` config file');
     }
-    const componentData = parseComponents(componentFiles);
+    let componentData = parseComponents(componentFiles);
+
+    const atlasKitRoot = path.join(getVscodeCurrentPath(), 'node_modules/@atlaskit');
+    const akData = parseAtlaskit(atlasKitRoot);
+    componentData = componentData.concat(akData);
 
     componentData.forEach((component) => {
       component.attr = '';
       const componentPropTypeDefs = component.propTypeDef;
-      if (componentPropTypeDefs) {
+      if (Array.isArray(componentPropTypeDefs)) {
+        const attrs = componentPropTypeDefs.reduce((acc, prop, index) => {
+          let comment = prop.value;
+
+          if (prop.isOptional) {
+            comment += ' ? ';
+          }
+
+          if (prop.comment) {
+            comment += ` //${prop.comment.replace(/\r?\n|\r/g, ' ').replace(/'|"|`/g, '')}`;
+          }
+
+          const attributes = `${acc}\n\t${prop.name}='$\{${index + 1}:${trimEnd(comment, ';')}}'`;
+          return attributes;
+        }, '');
+        component.attr = attrs;
+      } else if (componentPropTypeDefs) {
         const keys = Object.keys(componentPropTypeDefs);
         if (keys.length > 0) {
           const attrs = keys.reduce((acc, key, index) => {

@@ -77,7 +77,6 @@ const getTypeDesc = (rootNode, propTypeVarName, currentFilePath) => {
     });
 
     return {
-      propTypeName: propTypeVarName,
       propTypeDef: typeDef,
     };
   }
