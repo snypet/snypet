@@ -22,11 +22,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     }
     let componentData = parseComponents(componentFiles);
 
-    const atlasKitRoot = path.join(getVscodeCurrentPath(), 'node_modules/@atlaskit');
+    const atlasKitRoot: string = path.join(getVscodeCurrentPath(), 'node_modules/@atlaskit');
     const akData = parseAtlaskit(atlasKitRoot);
     componentData = componentData.concat(akData);
 
-    componentData.forEach((component) => {
+    componentData.forEach((component: any) => {
       component.attr = '';
       const componentPropTypeDefs = component.propTypeDef;
       if (Array.isArray(componentPropTypeDefs)) {
@@ -65,7 +65,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       ) {
         const items: vscode.CompletionItem[] = [];
 
-        componentData.forEach((component) => {
+        componentData.forEach((component: any) => {
           const snippetCompletion = new vscode.CompletionItem(component.componentName);
           //This is to get the relative file Path
           // const relativePath: string = getRelativePath(currentlyOpenTabfilePath, component.filePath);

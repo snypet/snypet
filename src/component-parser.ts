@@ -1,4 +1,4 @@
-import { Project, Node } from 'ts-morph';
+import { Project, Node, SourceFile } from 'ts-morph';
 import * as path from 'path';
 import * as fs from 'fs';
 
@@ -6,7 +6,7 @@ const project = new Project({
   skipFileDependencyResolution: true,
 });
 
-const getTypeDesc = (rootNode, propTypeVarName, currentFilePath) => {
+const getTypeDesc = (rootNode: SourceFile, propTypeVarName: string, currentFilePath: string) => {
   // Need to implement better robust logic
   // Will do for quick hack
   const currentDirectory = currentFilePath.split('index.tsx')[0];
@@ -56,7 +56,7 @@ const getTypeDesc = (rootNode, propTypeVarName, currentFilePath) => {
     });
 
     const typeRoot = tsParser.addSourceFileAtPath(correctPath);
-    const typeDef = {};
+    const typeDef: any = {};
     typeRoot.forEachChild((c) => {
       if (Node.isInterfaceDeclaration(c) || Node.isTypeAliasDeclaration(c)) {
         if (c.getFullText().indexOf(propTypeVarName) > -1) {
@@ -83,12 +83,12 @@ const getTypeDesc = (rootNode, propTypeVarName, currentFilePath) => {
 };
 
 export const parseComponents = (files: string[]) => {
-  const componentsDetailArray = [];
+  const componentsDetailArray: { componentName: undefined; componentType?: string; filePath?: string }[] = [];
   // Iterate through all the files to parse component data
   // and create array to further build snippets
   files.forEach((filePath) => {
     let componentName;
-    let componentType;
+    let componentType: string | null = '';
 
     const rootNode = project.addSourceFileAtPath(filePath);
     rootNode.forEachChild((node) => {

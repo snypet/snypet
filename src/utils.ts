@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 import * as fs from 'fs';
 import { workspace as Workspace, window as Window, WorkspaceFolder as IWorkSpaceFolder } from 'vscode';
 import * as path from 'path';
@@ -7,7 +8,7 @@ import { cosmiconfigSync } from 'cosmiconfig';
 import { cosmiconfig } from 'cosmiconfig';
 import { SynpetConfiguration } from './types';
 import { COSMICONFIG_MODULE_NAME, FILETYPES } from './constants';
-import { Node } from 'ts-morph';
+import { Node, SourceFile } from 'ts-morph';
 
 export const walk = (dir: string): string[] => {
   let results: string[] = [];
@@ -64,6 +65,7 @@ export const getSnypetConfig = async (path: string): Promise<SynpetConfiguration
 
     return null;
   } catch (e) {
+    // eslint-disable-next-line no-undef
     console.error(`Some error occurred while creating the config file, Please try again!. ${e}`);
     return null;
   }
@@ -124,20 +126,25 @@ export const getRelativePath = (from: string, to: string): string | undefined =>
     });
     return relativePath.replace('../', './');
   } catch (err) {
-    console.error(`Some error occurred during getting relative path ${e}`);
+    console.error(`Some error occurred during getting relative path ${err}`);
     return;
   }
 };
 
 export const getCurrentFocusFile = (): string => {
-  return Window.activeTextEditor.document.fileName;
+  if (Window.activeTextEditor) {
+    return Window.activeTextEditor.document.fileName;
+  } else {
+    return '';
+  }
 };
 
-const gettypeDefFromPropLiteral = (node) => {
-  const typeDefs = [];
-  node.forEachChild((n) => {
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+const gettypeDefFromPropLiteral = (node: any) => {
+  const typeDefs: {}[] = [];
+  node.forEachChild((n: Node<import('typescript').Node>) => {
     if (Node.isPropertySignature(n)) {
-      const typeDef = {};
+      const typeDef: any = {};
       n.forEachChild((nn) => {
         if (nn.getKindName() === 'Identifier') {
           const currentText = nn.getFullText().trim();
@@ -163,10 +170,10 @@ const gettypeDefFromPropLiteral = (node) => {
   return typeDefs;
 };
 
-export const getTypeDef = (root) => {
+export const getTypeDef = (root: SourceFile) => {
   let typeDef;
 
-  root.forEachChild((c) => {
+  root.forEachChild((c: Node<import('typescript').Node>) => {
     if (Node.isInterfaceDeclaration(c)) {
       typeDef = gettypeDefFromPropLiteral(c);
     }
