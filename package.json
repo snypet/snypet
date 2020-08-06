@@ -20,11 +20,6 @@
         "command": "snypet.createConfig",
         "title": "Create Snypet Configuration",
         "category": "Snypet"
-      },
-      {
-        "command": "snypet.reloadSnippets",
-        "title": "Reload snippets",
-        "category": "Snypet"
       }
     ]
   },
