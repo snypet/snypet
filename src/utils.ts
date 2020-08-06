@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { isArray, isString, concat } from 'lodash';
+import { cosmiconfigSync } from 'cosmiconfig';
 
 import { cosmiconfig } from 'cosmiconfig';
 import { SynpetConfiguration } from './types';
@@ -26,31 +27,50 @@ export const walk = (dir: string): string[] => {
   return results;
 };
 
-export const getVscodeCurrentPath = (): string | undefined => {
+export const getVscodeCurrentPath = (): string => {
   const workspaceFolders = vscode.workspace.workspaceFolders;
   if (workspaceFolders && workspaceFolders[0]) {
     const currentFolder = workspaceFolders[0];
     const { path } = currentFolder.uri;
     return path;
   }
-  return;
+  return '';
 };
 
 /**
  * Searches for snypet config and returns a config if found or returns null
  */
-export const getSnypetConfig = async (): Promise<SynpetConfiguration | null> => {
-  const explorer = cosmiconfig(COSMICONFIG_MODULE_NAME);
+export const getSnypetConfig = async (path: string): Promise<SynpetConfiguration | null> => {
   try {
-    const path = getVscodeCurrentPath();
+    const explorer = cosmiconfig(COSMICONFIG_MODULE_NAME, {
+      stopDir: path, // only search in the current root directory
+    });
     if (path) {
       const result = await explorer.search(path);
       if (result && !result.isEmpty) {
         return result.config;
       }
     }
+
     return null;
   } catch (e) {
+    console.error(`Some error occurred while creating the config file, Please try again!. ${e}`);
+    return null;
+  }
+};
+
+// TODO: remove duplicate code
+export const getSnypetConfigSync = (path: string): SynpetConfiguration | null => {
+  try {
+    const explorer = cosmiconfigSync(COSMICONFIG_MODULE_NAME, {
+      stopDir: path,
+    });
+    const result = explorer.search(path);
+    if (result && !result.isEmpty) {
+      return result.config;
+    }
+    return null;
+  } catch (error) {
     console.error(`Some error occurred while creating the config file, Please try again!. ${e}`);
     return null;
   }
@@ -63,7 +83,7 @@ export const getComponentFiles = async (): Promise<string[]> => {
   let componentFiles: string[] = [];
 
   const rootPath = getVscodeCurrentPath();
-  const config = await getSnypetConfig();
+  const config = await getSnypetConfig(rootPath || '');
 
   if (rootPath && config) {
     const { componentPath } = config;
@@ -80,4 +100,8 @@ export const getComponentFiles = async (): Promise<string[]> => {
     }
   }
   return componentFiles;
+};
+export const isConfigAvailable = (path: string): boolean => {
+  const config = getSnypetConfigSync(path);
+  return !!config;
 };
