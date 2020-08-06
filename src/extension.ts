@@ -13,7 +13,7 @@ export function activate(context: vscode.ExtensionContext) {
 
   if (rootPath) {
     const componentsRoot = path.join(rootPath, packageDir);
-    const componentFiles = walk(componentsRoot);
+    const componentFiles = walk(componentsRoot);t
     // Write logic to get component name
     componentData = parseComponents(componentFiles);
 
@@ -25,7 +25,7 @@ export function activate(context: vscode.ExtensionContext) {
         if (keys.length > 0) {
           const attrs = keys.reduce((acc, key, index) => {
             return `${acc}
-  ${key}='$\{${index + 1}}'`;
+  ${key}='$\{${index + 1}:${component.propTypeDef[key].slice(0,-1)}}'`;
           }, '');
           component.attr = attrs;
         }
