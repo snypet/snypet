@@ -33,29 +33,32 @@ export function activate(context: vscode.ExtensionContext) {
     });
   }
 
-  const provider = vscode.languages.registerCompletionItemProvider(['plaintext', 'javascript', 'typescript'], {
-    provideCompletionItems(
-      document: vscode.TextDocument,
-      position: vscode.Position,
-      token: vscode.CancellationToken,
-      context: vscode.CompletionContext
-    ) {
-      const items = [];
+  const provider = vscode.languages.registerCompletionItemProvider(
+    ['javascript', 'typescript', 'javascriptreact', 'typescriptreact'],
+    {
+      provideCompletionItems(
+        document: vscode.TextDocument,
+        position: vscode.Position,
+        token: vscode.CancellationToken,
+        context: vscode.CompletionContext
+      ) {
+        const items = [];
 
-      componentData.forEach((component) => {
-        const snippetCompletion = new vscode.CompletionItem(component.componentName);
+        componentData.forEach((component) => {
+          const snippetCompletion = new vscode.CompletionItem(component.componentName);
 
-        snippetCompletion.insertText = new vscode.SnippetString(
-          `<${component.componentName} ${component.attr}>
+          snippetCompletion.insertText = new vscode.SnippetString(
+            `<${component.componentName} ${component.attr}>
   </${component.componentName}>`
-        );
+          );
 
-        items.push(snippetCompletion);
-      });
+          items.push(snippetCompletion);
+        });
 
-      return items;
-    },
-  });
+        return items;
+      },
+    }
+  );
 
   context.subscriptions.push(provider);
 }
