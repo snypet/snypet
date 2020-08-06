@@ -129,12 +129,14 @@ export const parseComponents = (files: string[]) => {
         let detail = {
           componentName,
           componentType: propType,
+          filePath,
         };
 
         if (!propType.startsWith('{')) {
           detail = {
             ...detail,
             ...getTypeDesc(rootNode, propType, filePath),
+            filePath,
           };
         }
 

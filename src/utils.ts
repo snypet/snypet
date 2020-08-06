@@ -6,7 +6,7 @@ import { cosmiconfigSync } from 'cosmiconfig';
 
 import { cosmiconfig } from 'cosmiconfig';
 import { SynpetConfiguration } from './types';
-import { COSMICONFIG_MODULE_NAME } from './constants';
+import { COSMICONFIG_MODULE_NAME, FILETYPES } from './constants';
 
 export const walk = (dir: string): string[] => {
   let results: string[] = [];
@@ -104,4 +104,21 @@ export const getComponentFiles = async (): Promise<string[]> => {
 export const isConfigAvailable = (path: string): boolean => {
   const config = getSnypetConfigSync(path);
   return !!config;
+};
+export const getRelativePath = (from: string, to: string): string | undefined => {
+  try {
+    const rootPath: string = getVscodeCurrentPath();
+    let relativePath = path.relative(from.replace(rootPath, ''), to.replace(rootPath, ''));
+    FILETYPES.map((types) => {
+      relativePath = relativePath.replace(types, '');
+    });
+    return relativePath.replace('../', './');
+  } catch (err) {
+    console.error(`Some error occurred during getting relative path ${e}`);
+    return;
+  }
+};
+
+export const getCurrentFocusFile = (): string => {
+  return vscode.window.activeTextEditor.document.fileName;
 };
