@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 import { getSnypetConfig, getVscodeCurrentPath, getComponentFiles } from './utils';
-import { SUPPORTED_FILES_TYPES } from './constants';
+import { SUPPORTED_FILE_TYPES } from './constants';
 
 import { parseComponents } from './component-parser';
 
@@ -33,7 +33,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     console.log(componentData);
   }
 
-  const provider = vscode.languages.registerCompletionItemProvider(SUPPORTED_FILES_TYPES, {
+  const provider = vscode.languages.registerCompletionItemProvider(SUPPORTED_FILE_TYPES, {
     provideCompletionItems(
       document: vscode.TextDocument,
       position: vscode.Position,
