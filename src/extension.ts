@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { window as Window, commands as Commands } from 'vscode';
+import { trimEnd } from 'lodash';
 
 import { getComponentFiles, isConfigAvailable, getVscodeCurrentPath } from './utils';
 import { SUPPORTED_FILE_TYPES, NO_CONFIG_ACTIONS } from './constants';
@@ -18,37 +19,36 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     }
     const componentData = parseComponents(componentFiles);
 
-    componentData.forEach((component) => {
-      component.attr = '';
-      if (component.propTypeDef) {
-        const keys = Object.keys(component.propTypeDef);
-        if (keys.length > 0) {
-          const attrs = keys.reduce((acc, key, index) => {
-            return `${acc}
-  ${key}='$\{${index + 1}}'`;
-          }, '');
-          component.attr = attrs;
-        }
+
+  componentData.forEach((component) => {
+    component.attr = '';
+    const componentPropTypeDefs = component.propTypeDef;
+    if (componentPropTypeDefs) {
+      const keys = Object.keys(componentPropTypeDefs);
+      if (keys.length > 0) {
+        const attrs = keys.reduce((acc, key, index) => {
+          return `${acc}\n\t${key}='$\{${index + 1}:${trimEnd(componentPropTypeDefs[key], ';')}}'`;
+        }, '');
+        component.attr = attrs;
       }
-    });
-    console.log(componentData);
+    }
+  });
 
-    const provider = vscode.languages.registerCompletionItemProvider(SUPPORTED_FILE_TYPES, {
-      provideCompletionItems(
-        document: vscode.TextDocument,
-        position: vscode.Position,
-        token: vscode.CancellationToken,
-        context: vscode.CompletionContext
-      ) {
-        const items = [];
+  const provider = vscode.languages.registerCompletionItemProvider(SUPPORTED_FILE_TYPES, {
+    provideCompletionItems(
+      document: vscode.TextDocument,
+      position: vscode.Position,
+      token: vscode.CancellationToken,
+      context: vscode.CompletionContext
+    ) {
+      const items = [];
 
-        componentData.forEach((component) => {
-          const snippetCompletion = new vscode.CompletionItem(component.componentName);
+      componentData.forEach((component) => {
+        const snippetCompletion = new vscode.CompletionItem(component.componentName);
 
-          snippetCompletion.insertText = new vscode.SnippetString(
-            `<${component.componentName} ${component.attr}>
-  </${component.componentName}>`
-          );
+        snippetCompletion.insertText = new vscode.SnippetString(
+          `<${component.componentName}${component.attr}>\n</${component.componentName}>`
+        );
 
           items.push(snippetCompletion);
         });
