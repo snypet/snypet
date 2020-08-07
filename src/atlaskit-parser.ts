@@ -9,6 +9,92 @@ const project = new Project({
   skipFileDependencyResolution: true,
 });
 
+type TPropDetail = {
+  name?: string;
+  type?: string;
+  hasQuestionToken?: boolean;
+};
+
+// Refacting to make parser generic
+const typeAliasPropParser = (str: string) => {
+  const props = str
+    .split('\n')
+    .filter((txt) => txt.includes(':'))
+    .map((txt) => txt.replace(/\s\s+/g, '').replace(';', ''));
+  const propArray: any[] = [];
+
+  props.forEach((element) => {
+    const propDetail: TPropDetail = {};
+    if (element.includes('?:')) {
+      const [name, value] = element.split('?:');
+      propDetail.name = name.trim();
+      propDetail.type = value.trim();
+      propDetail.hasQuestionToken = true;
+    } else {
+      const [name, value] = element.split('?:');
+      propDetail.name = name.trim();
+      propDetail.type = value.trim();
+    }
+
+    propArray.push(propDetail);
+  });
+
+  return propArray;
+};
+
+const getDefaultExport = (filePath: string): any => {
+  const p = new Project({
+    skipFileDependencyResolution: true,
+  });
+  p.addSourceFileAtPath(filePath);
+  const sourceFile = p.getSourceFileOrThrow(filePath);
+
+  const exports = sourceFile.getDefaultExportSymbol();
+  const defaultExport: any = exports?.getDeclarations()[0];
+
+  let exportedName: any;
+  const structure = defaultExport?.getStructure();
+  if (structure.name) {
+    exportedName = structure.name;
+  } else {
+    exportedName = structure.expression;
+  }
+
+  let propType;
+  let propTypeName;
+
+  sourceFile.getClasses().forEach((cl) => {
+    if (cl.getName() === exportedName) {
+      const extendsFrom = cl.getExtends();
+      const typeArg = extendsFrom?.getTypeArguments()[0]; // TODO: consider all the args
+      const propName = typeArg?.getFullText() as string;
+      propTypeName = propName;
+
+      const typeAlias = sourceFile.getTypeAlias(propName);
+      const interfaces = sourceFile.getInterface(propName);
+
+      if (typeAlias) {
+        const x = typeAlias.getStructure();
+        propType = typeAliasPropParser(x.type as string);
+      }
+
+      if (interfaces) {
+        propType = interfaces.getStructure().properties;
+      }
+    }
+  });
+
+  if (propType) {
+    return {
+      exportedName,
+      propType,
+      propTypeName,
+    };
+  }
+};
+
+//***** Refacting to make parser generic */
+
 const getPropTypeName = (str: string): string => {
   try {
     return str.split('<')[1].split('>')[0].split(',')[0];
@@ -43,7 +129,12 @@ const getComponentAliasForDefault = (rootNode: SourceFile): string => {
 };
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-const getComponentDetails = (calledFromFile: string, relativePath: string, componentName: string) => {
+const getComponentDetails = (
+  calledFromFile: string,
+  relativePath: string,
+  componentName: string,
+  componentImportedAs: string
+) => {
   const p = new Project({
     skipFileDependencyResolution: true,
   });
@@ -76,6 +167,17 @@ const getComponentDetails = (calledFromFile: string, relativePath: string, compo
     return;
   }
 
+  if (componentImportedAs === 'default') {
+    const { propType, propTypeName } = getDefaultExport(filePath);
+    if (propType) {
+      return {
+        componentName: alias,
+        componentType: propTypeName,
+        propTypeDef: propType,
+      };
+    }
+  }
+
   rootNode.forEachChild((leaf) => {
     const leafText = leaf.getFullText();
 
@@ -102,11 +204,15 @@ const getComponentDetails = (calledFromFile: string, relativePath: string, compo
   // If we figured out component type
   // let get typedef for those
   if (componentType) {
-    const typeDef = getTypeDef(rootNode);
+    const typeDef = getTypeDef(rootNode, componentType);
     return {
       componentName: alias,
       componentType: componentType,
       propTypeDef: typeDef,
+    };
+  } else if (alias) {
+    return {
+      componentName: alias,
     };
   }
 };
@@ -146,8 +252,13 @@ const getComponents = (dirpath: string): void => {
         // Get the files from where components are imported
         if (Node.isStringLiteral(exportNode) && exportData['fullText'].indexOf('from') > 0) {
           exportData.path = exportNode.getFullText().trim().replace(/'|"/g, '');
-          exportData['componentNames'].forEach((element: { exportedAs: any }) => {
-            const componentDetail = getComponentDetails(dirpath, exportData.path, element.exportedAs);
+          exportData['componentNames'].forEach((element: { exportedAs: string; importedAs: string }) => {
+            const componentDetail = getComponentDetails(
+              dirpath,
+              exportData.path,
+              element.exportedAs,
+              element.importedAs
+            );
             if (componentDetail) {
               componentsDirectory.push(componentDetail);
             }
@@ -176,9 +287,7 @@ const getComponentDirectories = (directoryPath: string): void => {
             const dts = path.join(listItemPath, packageContent.types);
             getComponents(dts);
           }
-        } catch (error) {
-          throw new Error(error);
-        }
+        } catch (error) {}
       }
     }
   });

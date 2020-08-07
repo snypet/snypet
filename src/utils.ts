@@ -1,4 +1,3 @@
-/* eslint-disable no-undef */
 import * as fs from 'fs';
 import { workspace as Workspace, window as Window, WorkspaceFolder as IWorkSpaceFolder } from 'vscode';
 import * as path from 'path';
@@ -157,9 +156,9 @@ const gettypeDefFromPropLiteral = (node: any) => {
             typeDef.name = currentText;
           }
         } else if (nn.getKindName() === 'QuestionToken') {
-          typeDef.isOptional = true;
+          typeDef.hasQuestionToken = true;
         } else {
-          typeDef.value = nn.getFullText().trim();
+          typeDef.type = nn.getFullText().trim();
         }
       });
 
@@ -170,15 +169,15 @@ const gettypeDefFromPropLiteral = (node: any) => {
   return typeDefs;
 };
 
-export const getTypeDef = (root: SourceFile) => {
+export const getTypeDef = (root: SourceFile, typeName: string): unknown => {
   let typeDef;
 
-  root.forEachChild((c: Node<import('typescript').Node>) => {
-    if (Node.isInterfaceDeclaration(c)) {
+  root.forEachChild((c) => {
+    if (Node.isInterfaceDeclaration(c) && c.getFullText().indexOf(typeName) > -1) {
       typeDef = gettypeDefFromPropLiteral(c);
     }
 
-    if (Node.isTypeAliasDeclaration(c)) {
+    if (Node.isTypeAliasDeclaration(c) && c.getFullText().indexOf(typeName) > -1) {
       c.forEachChild((cc) => {
         if (cc.getKindName() === 'TypeLiteral') {
           typeDef = gettypeDefFromPropLiteral(cc);

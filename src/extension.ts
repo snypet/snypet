@@ -18,11 +18,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   const config = getSnypetConfigSync(componentPath);
 
   if (config && config.componentPath) {
+    const displayComments = config.displayComments || false;
+    const displayOptionalProps = config.optionalProps || false;
     const componentFiles = await getComponentFiles();
     if (!componentFiles.length) {
       Window.showWarningMessage('No components found. Please verify the `componentPath` value in `snypet` config file');
     }
-    let componentData = parseComponents(componentFiles);
+    let componentData = parseComponents(componentFiles) as any[];
 
     const { componentPath } = config;
     const ATLASKIT_PATH = 'node_modules/@atlaskit';
@@ -38,38 +40,35 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       const componentPropTypeDefs = component.propTypeDef;
       if (Array.isArray(componentPropTypeDefs)) {
         const attrs = componentPropTypeDefs.reduce((acc, prop, index) => {
-          let comment = prop.value;
+          let comment = prop.type
+            .replace(/\s\s+/g, ' ')
+            .replace(/'|"|`|{|}/g, '')
+            .replace(/\r?\n|\r/g, '');
 
-          if (prop.isOptional) {
+          if (prop.hasQuestionToken && !displayOptionalProps) {
+            return acc;
+          }
+
+          if (prop.hasQuestionToken && displayComments) {
             comment += ' ? ';
           }
 
-          if (prop.comment) {
-            comment += ` //${prop.comment.replace(/\r?\n|\r/g, ' ').replace(/'|"|`/g, '')}`;
+          if (prop.comment && displayComments) {
+            comment += ` //${prop.comment
+              .replace(/\s\s+/g, ' ')
+              .replace(/'|"|`|{|}/g, '')
+              .replace(/\r?\n|\r/g, '')}`;
           }
 
           const attributes = `${acc}\n\t${prop.name}='$\{${index + 1}:${trimEnd(comment, ';')}}'`;
           return attributes;
         }, '');
         component.attr = attrs;
-      } else if (componentPropTypeDefs) {
-        const keys = Object.keys(componentPropTypeDefs);
-        if (keys.length > 0) {
-          const attrs = keys.reduce((acc, key, index) => {
-            return `${acc}\n\t${key}='$\{${index + 1}:${trimEnd(componentPropTypeDefs[key], ';')}}'`;
-          }, '');
-          component.attr = attrs;
-        }
       }
     });
 
     const provider = vscode.languages.registerCompletionItemProvider(SUPPORTED_FILE_TYPES, {
-      provideCompletionItems(
-        document: vscode.TextDocument,
-        position: vscode.Position,
-        token: vscode.CancellationToken,
-        context: vscode.CompletionContext
-      ) {
+      provideCompletionItems() {
         const items: vscode.CompletionItem[] = [];
 
         componentData.forEach((component: any) => {
