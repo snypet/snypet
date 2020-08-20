@@ -36,7 +36,7 @@
     "test": "node ./dist/test/runTest.js",
     "webpack:prod": "webpack --mode production",
     "webpack:dev": "webpack --mode development --watch",
-    "vscode:prepublish": "npm run compile",
+    "vscode:prepublish": "npm run webpack:prod",
     "compile": "tsc -p ./"
   },
   "devDependencies": {
