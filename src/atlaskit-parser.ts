@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
-import { Project, Node, SyntaxKind, SourceFile } from 'ts-morph';
+import { Project, Node, SourceFile } from 'ts-morph';
 import * as path from 'path';
 import * as fs from 'fs';
 
@@ -129,7 +129,7 @@ const getComponentAliasForDefault = (rootNode: SourceFile): string => {
 };
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-const getComponentDetails = (
+const getComponentAttributes = (
   calledFromFile: string,
   relativePath: string,
   componentName: string,
@@ -216,17 +216,25 @@ const getComponentDetails = (
     };
   }
 };
-
-const componentsDirectory: (
-  | { componentName: any; componentType?: undefined; propTypeDef?: undefined }
-  | { componentName: any; componentType: never; propTypeDef: undefined }
-)[] = [];
+interface IcomponentDetail {
+  importedAs: string | undefined;
+  exportedAs: string | undefined;
+}
+interface IcomponentAttr {
+  componentName: string;
+  componentType?: string;
+  propTypeDef?: unknown;
+}
+interface IcomponentObj {
+  fullText: string;
+  componentNames: IcomponentDetail[];
+}
+const componentsDirectory: IcomponentAttr[] = [];
 const getComponents = (dirpath: string): void => {
   if (!fs.existsSync(dirpath)) {
     return;
   }
   const rootNode = project.addSourceFileAtPath(dirpath);
-
   rootNode.forEachChild((leaf) => {
     if (Node.isExportDeclaration(leaf)) {
       const exportData: any = {
@@ -236,10 +244,10 @@ const getComponents = (dirpath: string): void => {
       leaf.forEachChild((exportNode) => {
         // Get all exports identifier
         if (Node.isNamedExports(exportNode)) {
-          const componentNames: { importedAs: string | undefined; exportedAs: string | undefined }[] = [];
+          const componentNames: IcomponentDetail[] = [];
           exportNode.forEachChild((exportSpec) => {
             if (Node.isExportSpecifier(exportSpec)) {
-              const componentDetail = {
+              const componentDetail: IcomponentDetail = {
                 importedAs: exportSpec.getFirstChild()?.getFullText().trim(),
                 exportedAs: exportSpec.getLastChild()?.getFullText().trim(),
               };
@@ -253,7 +261,7 @@ const getComponents = (dirpath: string): void => {
         if (Node.isStringLiteral(exportNode) && exportData['fullText'].indexOf('from') > 0) {
           exportData.path = exportNode.getFullText().trim().replace(/'|"/g, '');
           exportData['componentNames'].forEach((element: { exportedAs: string; importedAs: string }) => {
-            const componentDetail = getComponentDetails(
+            const componentDetail: IcomponentAttr | undefined = getComponentAttributes(
               dirpath,
               exportData.path,
               element.exportedAs,
@@ -281,13 +289,15 @@ const getComponentDirectories = (directoryPath: string): void => {
 
       if (fs.existsSync(packagePath)) {
         try {
-          // eslint-disable-next-line no-undef
-          const packageContent = require(packagePath);
+          const packageContent = JSON.parse(fs.readFileSync(packagePath, 'utf-8'));
           if (packageContent.types) {
             const dts = path.join(listItemPath, packageContent.types);
             getComponents(dts);
           }
-        } catch (error) {}
+        } catch (error) {
+          // eslint-disable-next-line no-undef
+          console.error(`Error while getting file. ${error}`);
+        }
       }
     }
   });

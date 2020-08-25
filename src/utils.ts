@@ -139,7 +139,7 @@ export const getCurrentFocusFile = (): string => {
 };
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-const gettypeDefFromPropLiteral = (node: any) => {
+const gettypeDefFromPropLiteral = (node: any): any => {
   const typeDefs: {}[] = [];
   node.forEachChild((n: Node<import('typescript').Node>) => {
     if (Node.isPropertySignature(n)) {
