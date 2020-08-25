@@ -1,12 +1,13 @@
-import { Project, Node } from 'ts-morph';
+import { Project, Node, SourceFile } from 'ts-morph';
 import * as path from 'path';
 import * as fs from 'fs';
+import { getTypeDef } from './utils';
 
 const project = new Project({
   skipFileDependencyResolution: true,
 });
 
-const getTypeDesc = (rootNode, propTypeVarName, currentFilePath) => {
+const getTypeDesc = (rootNode: SourceFile, propTypeVarName: string, currentFilePath: string): object | undefined => {
   // Need to implement better robust logic
   // Will do for quick hack
   const currentDirectory = currentFilePath.split('index.tsx')[0];
@@ -56,25 +57,7 @@ const getTypeDesc = (rootNode, propTypeVarName, currentFilePath) => {
     });
 
     const typeRoot = tsParser.addSourceFileAtPath(correctPath);
-    const typeDef = {};
-    typeRoot.forEachChild((c) => {
-      if (Node.isInterfaceDeclaration(c) || Node.isTypeAliasDeclaration(c)) {
-        if (c.getFullText().indexOf(propTypeVarName) > -1) {
-          c.forEachChild((cc) => {
-            if (Node.isPropertySignature(cc)) {
-              const fullText = cc.getFullText();
-              if (cc.hasQuestionToken()) {
-                const [name, value] = fullText.split('?:');
-                typeDef[name.trim()] = value.trim();
-              } else {
-                const [name, value] = fullText.split(':');
-                typeDef[name.trim()] = value.trim();
-              }
-            }
-          });
-        }
-      }
-    });
+    const typeDef = getTypeDef(typeRoot, propTypeVarName);
 
     return {
       propTypeDef: typeDef,
@@ -82,13 +65,13 @@ const getTypeDesc = (rootNode, propTypeVarName, currentFilePath) => {
   }
 };
 
-export const parseComponents = (files: string[]) => {
-  const componentsDetailArray = [];
+export const parseComponents = (files: string[]): unknown => {
+  const componentsDetailArray: { componentName: undefined; componentType?: string; filePath?: string }[] = [];
   // Iterate through all the files to parse component data
   // and create array to further build snippets
   files.forEach((filePath) => {
     let componentName;
-    let componentType;
+    let componentType: string | null = '';
 
     const rootNode = project.addSourceFileAtPath(filePath);
     rootNode.forEachChild((node) => {
@@ -113,7 +96,6 @@ export const parseComponents = (files: string[]) => {
             // iterate inside to get the prop types
             nameDec.forEachChild((child) => {
               if (Node.isTypeReferenceNode(child)) {
-                const propTypeDec = child;
                 componentType = child.getFullText().trim();
               }
             });

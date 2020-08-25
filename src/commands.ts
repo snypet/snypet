@@ -28,7 +28,7 @@ const pickFolder = async (
   return selected.folder;
 };
 
-export const createDefaultConfiguration = (): void => {
+export const createConfigFile = (): void => {
   const folders = Workspace.workspaceFolders;
   if (!folders) {
     Window.showErrorMessage('A Synpet configuration can only be generated if VS Code is opened on a workspace folder.');
